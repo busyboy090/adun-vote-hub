@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { authApi } from "@/api/auth";
 import { institutionsApi } from "@/api/institutions";
 
@@ -43,13 +50,17 @@ export function RegisterPage() {
       levelId: "",
     },
   });
+  const facultyId = form.watch("facultyId");
+  const departmentId = form.watch("departmentId");
+  const levelId = form.watch("levelId");
   const faculties = useQuery({
     queryKey: ["institutions", "faculties"],
     queryFn: institutionsApi.faculties.list,
   });
   const departments = useQuery({
-    queryKey: ["institutions", "departments", form.watch("facultyId")],
-    queryFn: () => institutionsApi.departments.list(form.getValues("facultyId") || undefined),
+    queryKey: ["institutions", "departments", facultyId],
+    queryFn: () => institutionsApi.departments.list(facultyId),
+    enabled: !!facultyId,
   });
   const levels = useQuery({
     queryKey: ["institutions", "levels"],
@@ -145,52 +156,101 @@ export function RegisterPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="faculty">Faculty</Label>
-              <select
-                id="faculty"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                {...form.register("facultyId", {
-                  onChange: () => form.setValue("departmentId", ""),
-                })}
+              <Select
+                value={facultyId || undefined}
+                onValueChange={(value) => {
+                  form.setValue("facultyId", value, { shouldDirty: true, shouldValidate: true });
+                  form.setValue("departmentId", "", { shouldDirty: true });
+                }}
+                disabled={faculties.isLoading}
               >
-                <option value="">Select faculty</option>
-                {(faculties.data ?? []).map((faculty) => (
-                  <option key={faculty.id} value={faculty.id}>
-                    {faculty.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="faculty" className="h-10">
+                  <SelectValue
+                    placeholder={faculties.isLoading ? "Loading faculties..." : "Select faculty"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {(faculties.data ?? []).length === 0 && !faculties.isLoading ? (
+                    <SelectItem value="__no_faculties" disabled>
+                      No faculties available
+                    </SelectItem>
+                  ) : (
+                    (faculties.data ?? []).map((faculty) => (
+                      <SelectItem key={faculty.id} value={faculty.id}>
+                        {faculty.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <select
-                id="department"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                disabled={!form.watch("facultyId")}
-                {...form.register("departmentId")}
+              <Select
+                value={departmentId || undefined}
+                onValueChange={(value) =>
+                  form.setValue("departmentId", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                disabled={!facultyId || departments.isLoading}
               >
-                <option value="">Select department</option>
-                {(departments.data ?? []).map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="department" className="h-10">
+                  <SelectValue
+                    placeholder={
+                      !facultyId
+                        ? "Select a faculty first"
+                        : departments.isLoading
+                          ? "Loading departments..."
+                          : "Select department"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {(departments.data ?? []).length === 0 && !departments.isLoading ? (
+                    <SelectItem value="__no_departments" disabled>
+                      No departments available
+                    </SelectItem>
+                  ) : (
+                    (departments.data ?? []).map((department) => (
+                      <SelectItem key={department.id} value={department.id}>
+                        {department.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="level">Level</Label>
-            <select
-              id="level"
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              {...form.register("levelId")}
+            <Select
+              value={levelId || undefined}
+              onValueChange={(value) =>
+                form.setValue("levelId", value, { shouldDirty: true, shouldValidate: true })
+              }
+              disabled={levels.isLoading}
             >
-              <option value="">Select level</option>
-              {(levels.data ?? []).map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="level" className="h-10">
+                <SelectValue
+                  placeholder={levels.isLoading ? "Loading levels..." : "Select level"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {(levels.data ?? []).length === 0 && !levels.isLoading ? (
+                  <SelectItem value="__no_levels" disabled>
+                    No levels available
+                  </SelectItem>
+                ) : (
+                  (levels.data ?? []).map((level) => (
+                    <SelectItem key={level.id} value={level.id}>
+                      {level.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
