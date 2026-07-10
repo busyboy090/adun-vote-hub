@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,21 +13,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { authApi } from "@/api/auth";
 import { useAuth } from "@/store/auth";
 
-const schema = z.object({
-  matricNumber: z.string().trim().min(3, "Matric number is required").max(64),
-  password: z.string().min(8, "Use at least 8 characters").max(128),
-  faculty: z.string().trim().max(100).optional().or(z.literal("")),
-  department: z.string().trim().max(100).optional().or(z.literal("")),
-  level: z.string().trim().max(20).optional().or(z.literal("")),
-});
+const schema = z
+  .object({
+    matricNumber: z.string().trim().min(3, "Matric number is required").max(64),
+    password: z.string().min(8, "Use at least 8 characters").max(128),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    faculty: z.string().trim().max(100).optional().or(z.literal("")),
+    department: z.string().trim().max(100).optional().or(z.literal("")),
+    level: z.string().trim().max(20).optional().or(z.literal("")),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 type FormValues = z.infer<typeof schema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const setSession = useAuth((s) => s.setSession);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { matricNumber: "", password: "", faculty: "", department: "", level: "" },
+    defaultValues: {
+      matricNumber: "",
+      password: "",
+      confirmPassword: "",
+      faculty: "",
+      department: "",
+      level: "",
+    },
   });
 
   const mutation = useMutation({
@@ -73,9 +89,56 @@ export function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" {...form.register("password")} />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                className="pr-10"
+                {...form.register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {form.formState.errors.password && (
               <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                className="pr-10"
+                {...form.register("confirmPassword")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {form.formState.errors.confirmPassword && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.confirmPassword.message}
+              </p>
             )}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
