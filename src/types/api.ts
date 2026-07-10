@@ -91,6 +91,7 @@ export interface ElectionResults {
   electionTitle?: string;
   totalVotes: number;
   results: VoteResult[];
+  status?: ElectionStatus;
   winners?: VoteResult[];
 }
 

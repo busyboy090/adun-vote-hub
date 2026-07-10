@@ -13,15 +13,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "student" }) {
   const [electionId, setElectionId] = useState("");
   const elections = useQuery({ queryKey: ["elections"], queryFn: electionsApi.list });
+  
   useEffect(() => {
     if (!electionId && elections.data?.[0]) setElectionId(elections.data[0].id);
   }, [electionId, elections.data]);
+
   const results = useQuery({
     queryKey: ["results", electionId],
     queryFn: () => resultsApi.get(electionId),
     enabled: !!electionId,
     refetchInterval: audience === "admin" ? 15_000 : false,
   });
+
   const rows: VoteResult[] = results.data?.results ?? [];
   const grouped = rows.reduce<Record<string, VoteResult[]>>((acc, row) => {
     const key = row.positionTitle || row.positionId || "Results";
@@ -50,24 +53,29 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
             : "View published election tallies and winners."}
         </p>
       </div>
+
       <Card>
         <CardContent className="p-4">
-          <Label htmlFor="result-election">Election</Label>
-          <select
-            id="result-election"
-            className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm sm:max-w-lg"
-            value={electionId}
-            onChange={(e) => setElectionId(e.target.value)}
-          >
-            <option value="">Select election</option>
-            {(elections.data ?? []).map((election) => (
-              <option key={election.id} value={election.id}>
-                {election.title}
-              </option>
-            ))}
-          </select>
+          {/* Stacked Container */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="result-election">Election</Label>
+            <select
+              id="result-election"
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm sm:max-w-lg"
+              value={electionId}
+              onChange={(e) => setElectionId(e.target.value)}
+            >
+              <option value="">Select election</option>
+              {(elections.data ?? []).map((election) => (
+                <option key={election.id} value={election.id}>
+                  {election.title}
+                </option>
+              ))}
+            </select>
+          </div>
         </CardContent>
       </Card>
+
       {results.isLoading ? (
         <Skeleton className="h-64" />
       ) : results.isError ? (
@@ -107,6 +115,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
               </CardContent>
             </Card>
           </div>
+
           {electionTitle || electionStatus ? (
             <div className="space-y-1">
               {electionTitle && <div className="text-sm font-medium">{electionTitle}</div>}
@@ -115,6 +124,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
               )}
             </div>
           ) : null}
+
           <div className="flex flex-col gap-4">
             {Object.entries(grouped).map(([position, candidates]) => {
               const max = Math.max(...candidates.map((candidate) => candidate.votes));
