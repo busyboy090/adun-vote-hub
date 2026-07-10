@@ -139,6 +139,7 @@ export function CandidatesPage() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="bg-green-800"
                     disabled={approve.isPending}
                     onClick={() =>
                       approve.mutate({ id: candidate.id, isApproved: !candidate.isApproved })
