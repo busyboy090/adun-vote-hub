@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { usersApi } from "@/api/users";
+import { useAuth } from "@/store/auth";
 import type { User } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function OfficersPage() {
+  const currentUser = useAuth((state) => state.user);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [created, setCreated] = useState<User | null>(null);
@@ -91,30 +93,36 @@ export function OfficersPage() {
                 <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
                   {foundOfficer.role}
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button className="mt-4" size="sm" variant="destructive">
-                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete officer
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete {foundOfficer.email}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        The officer will immediately lose access. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteOfficer.mutate(foundOfficer.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete officer
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {foundOfficer.id !== currentUser?.id ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button className="mt-4" size="sm" variant="destructive">
+                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete officer
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {foundOfficer.email}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The officer will immediately lose access. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteOfficer.mutate(foundOfficer.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete officer
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    You cannot delete the account you are currently signed in with.
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Search results will appear here.</p>

@@ -6,7 +6,7 @@ import { institutionsApi } from "@/api/institutions";
 import { studentsApi } from "@/api/students";
 import { usersApi } from "@/api/users";
 import { useAuth } from "@/store/auth";
-import type { UpdateStudentProfileDto, User } from "@/types/api";
+import type { StudentRecord, UpdateStudentProfileDto } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,9 +29,10 @@ import {
 
 export function StudentsPage() {
   const client = useQueryClient();
-  const isSuperAdmin = useAuth((state) => state.user?.role === "SUPER_ADMIN");
+  const currentUser = useAuth((state) => state.user);
+  const canDeleteUsers = currentUser?.role === "SUPER_ADMIN";
   const [search, setSearch] = useState("");
-  const [searchedStudent, setSearchedStudent] = useState<User | null>(null);
+  const [searchedStudent, setSearchedStudent] = useState<StudentRecord | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<UpdateStudentProfileDto>({});
   const students = useQuery({ queryKey: ["students"], queryFn: studentsApi.list });
@@ -56,12 +57,13 @@ export function StudentsPage() {
 
   useEffect(() => {
     if (!selected.data) return;
+    const profile = selected.data.studentProfile ?? selected.data;
     setForm({
-      facultyId: selected.data.facultyId,
-      departmentId: selected.data.departmentId,
-      levelId: selected.data.levelId,
-      isActive: selected.data.isActive ?? true,
-      isVerified: selected.data.isVerified ?? false,
+      facultyId: profile.facultyId,
+      departmentId: profile.departmentId,
+      levelId: profile.levelId,
+      isActive: profile.isActive ?? true,
+      isVerified: profile.isVerified ?? false,
     });
   }, [selected.data]);
 
@@ -94,13 +96,27 @@ export function StudentsPage() {
   });
   const displayedStudents = searchedStudent ? [searchedStudent] : (students.data ?? []);
 
-  function label(student: User) {
-    return student.matricNumber || student.email || student.id;
+  function label(student: StudentRecord) {
+    return (
+      student.user?.matricNumber ||
+      student.matricNumber ||
+      student.studentProfile?.user?.matricNumber ||
+      "Matric number unavailable"
+    );
   }
-  function departmentName(student: User) {
-    return typeof student.department === "string"
-      ? student.department
-      : student.department?.name || student.departmentRecord?.name || student.departmentId;
+  function departmentName(student: StudentRecord) {
+    return (
+      student.department?.name ||
+      student.studentProfile?.department?.name ||
+      student.departmentId ||
+      student.studentProfile?.departmentId
+    );
+  }
+  function userId(student: StudentRecord) {
+    return student.userId || student.user?.id || student.studentProfile?.user?.id || student.id;
+  }
+  function profileStatus(student: StudentRecord) {
+    return student.studentProfile ?? student;
   }
 
   return (
@@ -125,7 +141,7 @@ export function StudentsPage() {
               searchStudent.mutate(search.trim());
             }}
           >
-            <Label htmlFor="student-search">Search students</Label>
+            <Label htmlFor="student-search">Search by matric number or nickname</Label>
             <div className="flex gap-2">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -216,11 +232,15 @@ export function StudentsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant={student.isActive === false ? "destructive" : "outline"}>
-                        {student.isActive === false ? "Inactive" : "Active"}
+                      <Badge
+                        variant={
+                          profileStatus(student).isActive === false ? "destructive" : "outline"
+                        }
+                      >
+                        {profileStatus(student).isActive === false ? "Inactive" : "Active"}
                       </Badge>
                     </td>
-                    <td className="p-4">{student.isVerified ? "Yes" : "No"}</td>
+                    <td className="p-4">{profileStatus(student).isVerified ? "Yes" : "No"}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -231,7 +251,7 @@ export function StudentsPage() {
                           <Pencil className="mr-2 h-3.5 w-3.5" />
                           Manage
                         </Button>
-                        {isSuperAdmin && (
+                        {canDeleteUsers && userId(student) !== currentUser?.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button size="sm" variant="destructive">
@@ -249,7 +269,7 @@ export function StudentsPage() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => deleteUser.mutate(student.id)}
+                                  onClick={() => deleteUser.mutate(userId(student))}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete user

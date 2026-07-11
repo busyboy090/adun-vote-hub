@@ -5,54 +5,84 @@ import { toast } from "sonner";
 import { candidatesApi } from "@/api/candidates";
 import { positionsApi } from "@/api/positions";
 import { studentsApi } from "@/api/students";
+import type { StudentRecord } from "@/types/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
-type CandidateForm = { userId: string; positionId: string; manifesto: string; picture?: File };
-const blank: CandidateForm = { userId: "", positionId: "", manifesto: "" };
+type CandidateForm = {
+  matricNumber: string;
+  positionId: string;
+  manifesto: string;
+  picture?: File;
+};
+
+const blank: CandidateForm = { matricNumber: "", positionId: "", manifesto: "" };
+
+function studentUserId(student: StudentRecord) {
+  return (
+    student.userId ||
+    student.user?.id ||
+    student.studentProfile?.user?.id ||
+    (student.role === "STUDENT" ? student.id : undefined)
+  );
+}
 
 export function CandidatesPage() {
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CandidateForm>(blank);
-  
-  // Queries
   const candidates = useQuery({ queryKey: ["candidates"], queryFn: candidatesApi.list });
   const positions = useQuery({ queryKey: ["positions"], queryFn: () => positionsApi.list() });
-  const students = useQuery({ queryKey: ["students"], queryFn: studentsApi.list });
-  
-  // Lookup map for Position Titles
   const positionNames = new Map(
     (positions.data ?? []).map((position) => [position.id, position.title]),
   );
 
-  // Lookup map to associate a userId with their matricNumber from the nested student data
-  const studentOptions = (students.data ?? []) as Array<any>;
-  const studentMatricNumbers = new Map(
-    studentOptions.map((student) => {
-      const targetId = student.userId || student.id;
-      const displayValue = student.user?.matricNumber || student.user?.email || targetId;
-      return [targetId, displayValue];
-    })
-  );
-
-  // Mutations
   const create = useMutation({
-    mutationFn: () => candidatesApi.create(form),
+    mutationFn: async () => {
+      const student = await studentsApi.search(form.matricNumber.trim());
+      const userId = studentUserId(student);
+      if (!userId) throw new Error("The student search result did not include a user account.");
+      return candidatesApi.create({
+        userId,
+        positionId: form.positionId,
+        manifesto: form.manifesto || undefined,
+        picture: form.picture,
+      });
+    },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["candidates"] });
       toast.success("Candidate created");
       setOpen(false);
       setForm(blank);
     },
+    onError: (error) => {
+      if (error.message.includes("did not include")) toast.error(error.message);
+    },
   });
-
   const approve = useMutation({
     mutationFn: ({ id, isApproved }: { id: string; isApproved: boolean }) =>
       candidatesApi.update(id, { isApproved }),
@@ -61,7 +91,6 @@ export function CandidatesPage() {
       toast.success("Candidate status updated");
     },
   });
-
   const remove = useMutation({
     mutationFn: candidatesApi.remove,
     onSuccess: () => {
@@ -76,12 +105,11 @@ export function CandidatesPage() {
         <div>
           <h2 className="font-display text-2xl font-bold sm:text-3xl">Candidates</h2>
           <p className="text-sm text-muted-foreground">
-            Nominate students, review manifestos, and control approvals.
+            Nominate students by matric number, review manifestos, and control approvals.
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add candidate
+          <Plus className="mr-2 h-4 w-4" /> Add candidate
         </Button>
       </div>
 
@@ -112,20 +140,12 @@ export function CandidatesPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">
-                      {/* Priority Checklist: 
-                          1. Direct candidate user data 
-                          2. Map-matched matric number from students list 
-                          3. fallback text */}
-                      {candidate.user?.matricNumber ||
-                        candidate.user?.email ||
-                        studentMatricNumbers.get(candidate.userId) ||
-                        candidate.userId ||
-                        "Candidate"}
+                      {candidate.user?.matricNumber || "Matric number unavailable"}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {candidate.position?.title ||
                         positionNames.get(candidate.positionId) ||
-                        candidate.positionId}
+                        "Position unavailable"}
                     </div>
                   </div>
                   <Badge variant={candidate.isApproved ? "default" : "outline"}>
@@ -139,7 +159,6 @@ export function CandidatesPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-green-800 text-white hover:bg-green-700"
                     disabled={approve.isPending}
                     onClick={() =>
                       approve.mutate({ id: candidate.id, isApproved: !candidate.isApproved })
@@ -152,17 +171,30 @@ export function CandidatesPage() {
                     )}
                     {candidate.isApproved ? "Disapprove" : "Approve"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={remove.isPending}
-                    onClick={() => {
-                      if (window.confirm("Delete this candidate?")) remove.mutate(candidate.id);
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-3.5 w-3.5" />
-                    Delete
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this candidate?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The candidate will be removed from their position. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => remove.mutate(candidate.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete candidate
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>
@@ -177,54 +209,48 @@ export function CandidatesPage() {
           </DialogHeader>
           <form
             className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
+            onSubmit={(event) => {
+              event.preventDefault();
               create.mutate();
             }}
           >
             <div className="space-y-2">
-              <Label htmlFor="candidate-student">Student</Label>
-              <select
-                id="candidate-student"
+              <Label htmlFor="candidate-matric-number">Student matric number</Label>
+              <Input
+                id="candidate-matric-number"
                 required
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.userId}
-                onChange={(e) => setForm({ ...form, userId: e.target.value })}
-              >
-                <option value="">Select student</option>
-                {studentOptions.map((student) => {
-                  const optionValue = student.userId ?? student.id;
-                  return (
-                    <option key={optionValue} value={optionValue}>
-                      {student.user?.matricNumber || student.user?.email || student.id}
-                    </option>
-                  );
-                })}
-              </select>
+                placeholder="ADUN/FS/SEN/22/036"
+                value={form.matricNumber}
+                onChange={(event) => setForm({ ...form, matricNumber: event.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                The matric number is resolved securely to the backend user account.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="candidate-position">Position</Label>
-              <select
-                id="candidate-position"
-                required
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.positionId}
-                onChange={(e) => setForm({ ...form, positionId: e.target.value })}
+              <Select
+                value={form.positionId || undefined}
+                onValueChange={(positionId) => setForm({ ...form, positionId })}
               >
-                <option value="">Select position</option>
-                {(positions.data ?? []).map((position) => (
-                  <option key={position.id} value={position.id}>
-                    {position.title}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="candidate-position">
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(positions.data ?? []).map((position) => (
+                    <SelectItem key={position.id} value={position.id}>
+                      {position.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="manifesto">Manifesto</Label>
               <Textarea
                 id="manifesto"
                 value={form.manifesto}
-                onChange={(e) => setForm({ ...form, manifesto: e.target.value })}
+                onChange={(event) => setForm({ ...form, manifesto: event.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -233,12 +259,15 @@ export function CandidatesPage() {
                 id="picture"
                 type="file"
                 accept="image/*"
-                onChange={(e) => setForm({ ...form, picture: e.target.files?.[0] })}
+                onChange={(event) => setForm({ ...form, picture: event.target.files?.[0] })}
               />
             </div>
-            <Button className="w-full" disabled={create.isPending}>
-              {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create
-              candidate
+            <Button
+              className="w-full"
+              disabled={create.isPending || !form.positionId || !form.matricNumber.trim()}
+            >
+              {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create candidate
             </Button>
           </form>
         </DialogContent>

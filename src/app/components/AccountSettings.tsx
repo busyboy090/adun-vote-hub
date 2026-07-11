@@ -1,31 +1,17 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Loader2, LockKeyhole, Mail, Trash2 } from "lucide-react";
+import { Loader2, LockKeyhole, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { usersApi } from "@/api/users";
 import { useAuth } from "@/store/auth";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function AccountSettings() {
-  const navigate = useNavigate();
   const user = useAuth((state) => state.user);
   const setUser = useAuth((state) => state.setUser);
-  const clear = useAuth((state) => state.clear);
   const [email, setEmail] = useState(user?.email ?? "");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -47,14 +33,6 @@ export function AccountSettings() {
       setNewPassword("");
       setConfirmPassword("");
       toast.success("Password changed successfully");
-    },
-  });
-  const deleteAccount = useMutation({
-    mutationFn: usersApi.deleteMe,
-    onSuccess: () => {
-      clear();
-      toast.success("Your account was deleted");
-      navigate("/", { replace: true });
     },
   });
 
@@ -156,46 +134,6 @@ export function AccountSettings() {
           </form>
         </CardContent>
       </Card>
-
-      {/* {user?.role?.toLowerCase() !== "admin" && (
-        <Card className="border-destructive/40 lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg text-destructive">Delete account</CardTitle>
-            <CardDescription>
-              Permanently remove your user account. This action cannot be undone.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete my account
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Your profile and access to the voting system will be removed. This cannot be
-                    reversed.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteAccount.mutate()}
-                    disabled={deleteAccount.isPending}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {deleteAccount.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Delete account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
-      )} */}
     </div>
   );
 }

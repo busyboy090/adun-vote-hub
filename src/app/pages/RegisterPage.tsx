@@ -22,6 +22,8 @@ import { institutionsApi } from "@/api/institutions";
 
 const schema = z
   .object({
+    name: z.string().trim().min(2, "Name is required").max(120),
+    nickname: z.string().trim().min(2, "Nickname is required").max(64),
     matricNumber: z.string().trim().min(3, "Matric number is required").max(64),
     password: z.string().min(8, "Use at least 8 characters").max(128),
     confirmPassword: z.string().min(1, "Please confirm your password"),
@@ -39,9 +41,12 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [checkedNickname, setCheckedNickname] = useState("");
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      name: "",
+      nickname: "",
       matricNumber: "",
       password: "",
       confirmPassword: "",
@@ -53,6 +58,7 @@ export function RegisterPage() {
   const facultyId = form.watch("facultyId");
   const departmentId = form.watch("departmentId");
   const levelId = form.watch("levelId");
+  const nickname = form.watch("nickname");
   const faculties = useQuery({
     queryKey: ["institutions", "faculties"],
     queryFn: institutionsApi.faculties.list,
@@ -74,6 +80,14 @@ export function RegisterPage() {
       navigate("/login/student", { replace: true });
     },
   });
+  const nicknameCheck = useMutation({ mutationFn: authApi.checkNickname });
+  const nicknameAvailable =
+    checkedNickname === nickname.trim()
+      ? (nicknameCheck.data?.available ??
+        nicknameCheck.data?.isAvailable ??
+        nicknameCheck.data?.data?.available ??
+        nicknameCheck.data?.data?.isAvailable)
+      : undefined;
 
   return (
     <Card className="glass border-white/40 shadow-2xl">
@@ -84,16 +98,62 @@ export function RegisterPage() {
       <CardContent>
         <form
           className="space-y-4"
-          onSubmit={form.handleSubmit((v) =>
+          onSubmit={form.handleSubmit((v) => {
+            if (nicknameAvailable === false) {
+              toast.error("Choose an available nickname");
+              return;
+            }
             mutation.mutate({
+              name: v.name,
+              nickname: v.nickname,
               matricNumber: v.matricNumber,
               password: v.password,
               facultyId: v.facultyId || undefined,
               departmentId: v.departmentId || undefined,
               levelId: v.levelId || undefined,
-            }),
-          )}
+            });
+          })}
         >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full name</Label>
+              <Input id="name" placeholder="John Doe" {...form.register("name")} />
+              {form.formState.errors.name && (
+                <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">Nickname</Label>
+              <Input
+                id="nickname"
+                placeholder="johndoe"
+                {...form.register("nickname", {
+                  onBlur: (event) => {
+                    const value = event.target.value.trim();
+                    if (value.length >= 2) {
+                      setCheckedNickname(value);
+                      nicknameCheck.mutate(value);
+                    }
+                  },
+                  onChange: () => {
+                    setCheckedNickname("");
+                    nicknameCheck.reset();
+                  },
+                })}
+              />
+              {nicknameCheck.isPending ? (
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Checking availability...
+                </p>
+              ) : nicknameAvailable === true ? (
+                <p className="text-xs text-green-700">Nickname is available.</p>
+              ) : nicknameAvailable === false ? (
+                <p className="text-xs text-destructive">Nickname is already taken.</p>
+              ) : form.formState.errors.nickname ? (
+                <p className="text-xs text-destructive">{form.formState.errors.nickname.message}</p>
+              ) : null}
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="matric">Matric Number</Label>
             <Input

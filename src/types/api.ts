@@ -9,9 +9,7 @@ export interface InstitutionBase {
   updatedAt?: string;
 }
 
-
 export type Level = InstitutionBase;
-
 
 export interface Faculty {
   id: string;
@@ -30,7 +28,6 @@ export interface Department {
   updatedAt?: string;
 }
 
-
 export interface StudentProfile {
   id: string;
   userId: string;
@@ -42,20 +39,45 @@ export interface StudentProfile {
   faculty?: Faculty;
   department?: Department;
   level?: Level;
-  facultyRecord?: Faculty;       // Kept if your backend uses this fallback alias
+  user?: User;
+  facultyRecord?: Faculty; // Kept if your backend uses this fallback alias
   departmentRecord?: Department; // Kept if your backend uses this fallback alias
-  levelRecord?: Level;           // Kept if your backend uses this fallback alias
+  levelRecord?: Level; // Kept if your backend uses this fallback alias
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface User {
   id: string;
-  email: string | null;
-  matricNumber: string;
+  name?: string;
+  nickname?: string;
+  email?: string | null;
+  matricNumber?: string;
   role: Role | string;
-  createdAt: string;
+  createdAt?: string;
   studentProfile?: StudentProfile; // The crucial nested object from your API response
+}
+
+export interface StudentRecord {
+  id: string;
+  userId?: string;
+  name?: string;
+  nickname?: string;
+  matricNumber?: string;
+  email?: string | null;
+  role?: Role;
+  facultyId?: string;
+  departmentId?: string;
+  levelId?: string;
+  isActive?: boolean;
+  isVerified?: boolean;
+  faculty?: Faculty;
+  department?: Department;
+  level?: Level;
+  user?: User;
+  studentProfile?: StudentProfile;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -149,11 +171,19 @@ export interface StudentLoginDto {
   password: string;
 }
 export interface StudentRegisterDto {
+  name: string;
+  nickname: string;
   matricNumber: string;
   password: string;
   facultyId?: string;
   departmentId?: string;
   levelId?: string;
+}
+export interface NicknameAvailabilityResponse {
+  available?: boolean;
+  isAvailable?: boolean;
+  message?: string;
+  data?: { available?: boolean; isAvailable?: boolean };
 }
 export interface CreateUserDto {
   email?: string;
