@@ -10,10 +10,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 const blank: CreatePositionDto = { title: "", description: "", electionId: "" };
+const ALL_ELECTIONS = "__all_elections";
 
 export function PositionsPage() {
   const client = useQueryClient();
@@ -77,19 +85,23 @@ export function PositionsPage() {
       <Card>
         <CardContent className="p-4">
           <Label htmlFor="election-filter">Election</Label>
-          <select
-            id="election-filter"
-            className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm sm:max-w-md"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+          <Select
+            value={filter || ALL_ELECTIONS}
+            onValueChange={(value) => setFilter(value === ALL_ELECTIONS ? "" : value)}
+            disabled={elections.isLoading}
           >
-            <option value="">All elections</option>
-            {(elections.data ?? []).map((election) => (
-              <option key={election.id} value={election.id}>
-                {election.title}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="election-filter" className="mt-2 h-10 w-full sm:max-w-md">
+              <SelectValue placeholder="Filter by election" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_ELECTIONS}>All elections</SelectItem>
+              {(elections.data ?? []).map((election) => (
+                <SelectItem key={election.id} value={election.id}>
+                  {election.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
       {positions.isLoading ? (
@@ -146,22 +158,24 @@ export function PositionsPage() {
               save.mutate();
             }}
           >
-            <div className="space-y-2 flex flex-col gap-3">
-              <Label htmlFor="position-election block">Election</Label>
-              <select
-                id="position-election"
-                required
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                value={form.electionId}
-                onChange={(e) => setForm({ ...form, electionId: e.target.value })}
+            <div className="flex flex-col gap-3 space-y-2">
+              <Label htmlFor="position-election">Election</Label>
+              <Select
+                value={form.electionId || undefined}
+                onValueChange={(electionId) => setForm({ ...form, electionId })}
+                disabled={elections.isLoading}
               >
-                <option value="">Select election</option>
-                {(elections.data ?? []).map((election) => (
-                  <option key={election.id} value={election.id}>
-                    {election.title}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="position-election" className="h-10">
+                  <SelectValue placeholder="Select election" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(elections.data ?? []).map((election) => (
+                    <SelectItem key={election.id} value={election.id}>
+                      {election.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="position-title">Title</Label>
@@ -180,7 +194,7 @@ export function PositionsPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
-            <Button className="w-full" disabled={save.isPending}>
+            <Button className="w-full" disabled={save.isPending || !form.electionId}>
               {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save position
             </Button>
           </form>

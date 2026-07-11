@@ -9,6 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -200,20 +207,22 @@ export function InstitutionsPage() {
             {kind === "department" && (
               <div className="space-y-2">
                 <Label htmlFor="resource-faculty">Faculty</Label>
-                <select
-                  id="resource-faculty"
-                  required
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.facultyId}
-                  onChange={(e) => setForm({ ...form, facultyId: e.target.value })}
+                <Select
+                  value={form.facultyId || undefined}
+                  onValueChange={(facultyId) => setForm({ ...form, facultyId })}
+                  disabled={faculties.isLoading}
                 >
-                  <option value="">Select faculty</option>
-                  {(faculties.data ?? []).map((faculty) => (
-                    <option key={faculty.id} value={faculty.id}>
-                      {faculty.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="resource-faculty" className="h-10">
+                    <SelectValue placeholder="Select faculty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(faculties.data ?? []).map((faculty) => (
+                      <SelectItem key={faculty.id} value={faculty.id}>
+                        {faculty.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             <div className="space-y-2">

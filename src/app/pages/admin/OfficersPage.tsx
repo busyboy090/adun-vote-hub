@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,9 +157,9 @@ export function OfficersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="officer-password">Temporary password</Label>
-                <Input
+                <PasswordInput
                   id="officer-password"
-                  type="password"
+                  autoComplete="new-password"
                   minLength={6}
                   required
                   value={password}

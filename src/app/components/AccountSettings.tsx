@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/app/components/PasswordInput";
 
 export function AccountSettings() {
   const user = useAuth((state) => state.user);
@@ -91,9 +92,8 @@ export function AccountSettings() {
           <form className="space-y-4" onSubmit={submitPassword}>
             <div className="space-y-2">
               <Label htmlFor="old-password">Current password</Label>
-              <Input
+              <PasswordInput
                 id="old-password"
-                type="password"
                 autoComplete="current-password"
                 minLength={6}
                 required
@@ -104,9 +104,8 @@ export function AccountSettings() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="new-password">New password</Label>
-                <Input
+                <PasswordInput
                   id="new-password"
-                  type="password"
                   autoComplete="new-password"
                   minLength={6}
                   required
@@ -116,9 +115,8 @@ export function AccountSettings() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-new-password">Confirm password</Label>
-                <Input
+                <PasswordInput
                   id="confirm-new-password"
-                  type="password"
                   autoComplete="new-password"
                   minLength={6}
                   required

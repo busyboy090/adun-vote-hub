@@ -16,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,6 +33,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+const NOT_SET = "__not_set";
 
 export function StudentsPage() {
   const client = useQueryClient();
@@ -48,7 +57,7 @@ export function StudentsPage() {
   const departments = useQuery({
     queryKey: ["institutions", "departments", form.facultyId],
     queryFn: () => institutionsApi.departments.list(form.facultyId),
-    enabled: !!selectedId,
+    enabled: !!selectedId && !!form.facultyId,
   });
   const levels = useQuery({
     queryKey: ["institutions", "levels"],
@@ -308,55 +317,79 @@ export function StudentsPage() {
               }}
             >
               <div className="space-y-2">
-                <Label>Faculty</Label>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.facultyId ?? ""}
-                  onChange={(e) =>
+                <Label htmlFor="student-faculty">Faculty</Label>
+                <Select
+                  value={form.facultyId || NOT_SET}
+                  onValueChange={(value) =>
                     setForm({
                       ...form,
-                      facultyId: e.target.value || undefined,
+                      facultyId: value === NOT_SET ? undefined : value,
                       departmentId: undefined,
                     })
                   }
+                  disabled={faculties.isLoading}
                 >
-                  <option value="">Not set</option>
-                  {(faculties.data ?? []).map((faculty) => (
-                    <option key={faculty.id} value={faculty.id}>
-                      {faculty.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="student-faculty" className="h-10">
+                    <SelectValue placeholder="Select faculty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NOT_SET}>Not set</SelectItem>
+                    {(faculties.data ?? []).map((faculty) => (
+                      <SelectItem key={faculty.id} value={faculty.id}>
+                        {faculty.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>Department</Label>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.departmentId ?? ""}
-                  onChange={(e) => setForm({ ...form, departmentId: e.target.value || undefined })}
+                <Label htmlFor="student-department">Department</Label>
+                <Select
+                  value={form.departmentId || NOT_SET}
+                  onValueChange={(value) =>
+                    setForm({
+                      ...form,
+                      departmentId: value === NOT_SET ? undefined : value,
+                    })
+                  }
+                  disabled={!form.facultyId || departments.isLoading}
                 >
-                  <option value="">Not set</option>
-                  {(departments.data ?? []).map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="student-department" className="h-10">
+                    <SelectValue
+                      placeholder={form.facultyId ? "Select department" : "Select a faculty first"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NOT_SET}>Not set</SelectItem>
+                    {(departments.data ?? []).map((department) => (
+                      <SelectItem key={department.id} value={department.id}>
+                        {department.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>Level</Label>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.levelId ?? ""}
-                  onChange={(e) => setForm({ ...form, levelId: e.target.value || undefined })}
+                <Label htmlFor="student-level">Level</Label>
+                <Select
+                  value={form.levelId || NOT_SET}
+                  onValueChange={(value) =>
+                    setForm({ ...form, levelId: value === NOT_SET ? undefined : value })
+                  }
+                  disabled={levels.isLoading}
                 >
-                  <option value="">Not set</option>
-                  {(levels.data ?? []).map((level) => (
-                    <option key={level.id} value={level.id}>
-                      {level.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="student-level" className="h-10">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NOT_SET}>Not set</SelectItem>
+                    {(levels.data ?? []).map((level) => (
+                      <SelectItem key={level.id} value={level.id}>
+                        {level.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <Label htmlFor="active">Voting account active</Label>

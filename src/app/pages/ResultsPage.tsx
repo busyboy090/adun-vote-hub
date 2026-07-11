@@ -8,12 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "student" }) {
   const [electionId, setElectionId] = useState("");
   const elections = useQuery({ queryKey: ["elections"], queryFn: electionsApi.list });
-  
+
   useEffect(() => {
     if (!electionId && elections.data?.[0]) setElectionId(elections.data[0].id);
   }, [electionId, elections.data]);
@@ -59,19 +66,22 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
           {/* Stacked Container */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="result-election">Election</Label>
-            <select
-              id="result-election"
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm sm:max-w-lg"
-              value={electionId}
-              onChange={(e) => setElectionId(e.target.value)}
+            <Select
+              value={electionId || undefined}
+              onValueChange={setElectionId}
+              disabled={elections.isLoading}
             >
-              <option value="">Select election</option>
-              {(elections.data ?? []).map((election) => (
-                <option key={election.id} value={election.id}>
-                  {election.title}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="result-election" className="h-10 w-full sm:max-w-lg">
+                <SelectValue placeholder="Select election" />
+              </SelectTrigger>
+              <SelectContent>
+                {(elections.data ?? []).map((election) => (
+                  <SelectItem key={election.id} value={election.id}>
+                    {election.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

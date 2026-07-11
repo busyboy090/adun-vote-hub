@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const emptyForm: CreateElectionDto = { title: "", startDate: "", endDate: "", status: "DRAFT" };
@@ -134,16 +141,21 @@ export function ElectionsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                <Select
+                  value={form.status || "DRAFT"}
+                  onValueChange={(status) => setForm({ ...form, status })}
                 >
-                  {["DRAFT", "SCHEDULED", "ONGOING", "ENDED", "ARCHIVED"].map((status) => (
-                    <option key={status}>{status}</option>
-                  ))}
-                </select>
+                  <SelectTrigger id="status" className="h-10">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["DRAFT", "SCHEDULED", "ONGOING", "ENDED", "ARCHIVED"].map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button className="w-full" disabled={save.isPending}>
                 {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
