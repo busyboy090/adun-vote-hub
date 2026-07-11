@@ -51,9 +51,9 @@ export function ProfilePage() {
     if (!profile.data?.studentProfile) return;
     const sp = profile.data.studentProfile;
     setForm({
-      facultyId: sp.facultyId ?? "",
-      departmentId: sp.departmentId ?? "",
-      levelId: sp.levelId ?? "",
+      facultyId: sp.facultyId || "",
+      departmentId: sp.departmentId || "",
+      levelId: sp.levelId || "",
     });
   }, [profile.data]);
 
@@ -183,7 +183,7 @@ export function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="profile-faculty">Faculty</Label>
                 <Select
-                  value={form.facultyId || undefined}
+                  value={form.facultyId || ""}
                   onValueChange={(facultyId) => setForm({ ...form, facultyId, departmentId: "" })}
                   disabled={faculties.isLoading}
                 >
@@ -199,10 +199,11 @@ export function ProfilePage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="profile-department">Department</Label>
                 <Select
-                  value={form.departmentId || undefined}
+                  value={form.departmentId || ""}
                   onValueChange={(departmentId) => setForm({ ...form, departmentId })}
                   disabled={!form.facultyId || departments.isLoading}
                 >
@@ -220,10 +221,11 @@ export function ProfilePage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="profile-level">Level</Label>
                 <Select
-                  value={form.levelId || undefined}
+                  value={form.levelId || ""}
                   onValueChange={(levelId) => setForm({ ...form, levelId })}
                   disabled={levels.isLoading}
                 >
@@ -239,6 +241,7 @@ export function ProfilePage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <Button disabled={updateAcademicProfile.isPending}>
                 {updateAcademicProfile.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
