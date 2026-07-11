@@ -56,7 +56,7 @@ export function StudentsPage() {
   });
   const departments = useQuery({
     queryKey: ["institutions", "departments", form.facultyId],
-    queryFn: () => institutionsApi.departments.list(form.facultyId),
+    queryFn: () => institutionsApi.departments.list(form.facultyId!),
     enabled: !!selectedId && !!form.facultyId,
   });
   const levels = useQuery({
@@ -68,9 +68,9 @@ export function StudentsPage() {
     if (!selected.data) return;
     const profile = selected.data.studentProfile ?? selected.data;
     setForm({
-      facultyId: profile.facultyId,
-      departmentId: profile.departmentId,
-      levelId: profile.levelId,
+      facultyId: profile.facultyId || undefined,
+      departmentId: profile.departmentId || undefined,
+      levelId: profile.levelId || undefined,
       isActive: profile.isActive ?? true,
       isVerified: profile.isVerified ?? false,
     });
@@ -319,6 +319,7 @@ export function StudentsPage() {
               <div className="space-y-2">
                 <Label htmlFor="student-faculty">Faculty</Label>
                 <Select
+                  key={faculties.isLoading ? "loading" : form.facultyId || NOT_SET}
                   value={form.facultyId || NOT_SET}
                   onValueChange={(value) =>
                     setForm({
@@ -345,6 +346,7 @@ export function StudentsPage() {
               <div className="space-y-2">
                 <Label htmlFor="student-department">Department</Label>
                 <Select
+                  key={departments.isLoading ? "loading" : form.departmentId || NOT_SET}
                   value={form.departmentId || NOT_SET}
                   onValueChange={(value) =>
                     setForm({
@@ -372,6 +374,7 @@ export function StudentsPage() {
               <div className="space-y-2">
                 <Label htmlFor="student-level">Level</Label>
                 <Select
+                  key={levels.isLoading ? "loading" : form.levelId || NOT_SET}
                   value={form.levelId || NOT_SET}
                   onValueChange={(value) =>
                     setForm({ ...form, levelId: value === NOT_SET ? undefined : value })
