@@ -40,10 +40,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
   }, {});
 
   // Compute total votes across all positions (sum of all candidate votes)
-  const totalVotesComputed = Object.values(grouped).reduce(
-    (acc, candidates) => acc + candidates.reduce((s, c) => s + (c.votes ?? 0), 0),
-    0,
-  );
+  const totalVotesComputed = rows.reduce((sum, row) => sum + row.totalVotes, 0);
 
   const electionTitle =
     results.data?.electionTitle || elections.data?.find((e) => e.id === electionId)?.title;

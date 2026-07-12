@@ -125,6 +125,7 @@ export interface VoteResult {
   positionId: string;
   positionTitle?: string;
   votes: number;
+  totalVotes: number;
   percentage?: number;
 }
 
