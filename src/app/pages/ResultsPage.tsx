@@ -38,7 +38,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
   const totalVotesCounted = results.data?.totalVotes ?? positions.reduce((sum, pos) => sum + (pos.totalVotes || 0), 0);
 
   const electionTitle =
-    results.data?.electionTitle || elections.data?.find((e) => e.id === electionId)?.title;
+    results.data?.electionTitle || elections.data?.find((e: any) => e.id === electionId)?.title;
   const electionStatus =
     results.data?.status || elections.data?.find((e) => e.id === electionId)?.status;
 
@@ -128,11 +128,11 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
 
           <div className="flex flex-col gap-4">
             {/* 3. Map directly over the positions array provided by backend */}
-            {positions.map((positionGroup) => {
+            {positions.map((positionGroup: any) => {
               const candidatesList = positionGroup.candidates ?? [];
               
               // Find the highest vote count to correctly calibrate the progress bar max-values
-              const maxVotes = Math.max(...candidatesList.map((c) => c.voteCount || 0), 0);
+              const maxVotes = Math.max(...candidatesList.map((c: any) => c.voteCount || 0), 0);
 
               return (
                 <Card key={positionGroup.positionId}>
@@ -141,11 +141,11 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
                   </CardHeader>
                   <CardContent className="space-y-5">
                     {candidatesList
-                      .sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0))
-                      .map((candidate) => {
+                      .sort((a: any, b: any) => (b.voteCount || 0) - (a.voteCount || 0))
+                      .map((candidate: any) => {
                         // Safely pull the user objects from backend response
-                        const displayName = candidate.user?.name || "Unknown Candidate";
-                        const nickname = candidate.user?.nickname ? `"${candidate.user.nickname}"` : "";
+                        const displayName = candidate?.name || "Unknown Candidate";
+                        const nickname = candidate.nickname ? `"${candidate.user.nickname}"` : "";
 
                         return (
                           <div key={candidate.id}>
